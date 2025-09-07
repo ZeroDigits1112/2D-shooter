@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Launcher</title>
+  <style>
+    body { 
+      margin: 0; 
+      background: #111; 
+      color: #fff; 
+      font-family: sans-serif; 
+      text-align: center;
+      padding: 50px;
+    }
+    .launcher {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 40px;
+      background: #222;
+      border-radius: 10px;
+      border: 2px solid #fff;
+    }
+    button { 
+      margin: 20px; 
+      padding: 15px 30px; 
+      font-size: 18px; 
+      cursor: pointer;
+      background: #333;
+      color: #fff;
+      border: 2px solid #fff;
+      border-radius: 5px;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: #555;
+      transform: scale(1.05);
+    }
+    h1 {
+      color: #00ff00;
+      text-shadow: 0 0 10px #00ff00;
+    }
+    .info {
+      margin: 20px 0;
+      font-size: 14px;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="launcher">
+    <h1>🎮 2D Tactical Shooter Launcher</h1>
+    <p>Launch your game in a new window for the best experience!</p>
+    
+    <button onclick="launchGame()">🚀 Launch Game in New Window</button>
+    <button onclick="launchGameFullscreen()">🖥️ Launch Game Fullscreen</button>
+    
+    <div class="info">
+      <p><strong>Controls:</strong></p>
+      <p>W, A, S, D - Move your character</p>
+      <p>SPACE - Shoot bullets</p>
+      <p>SHIFT - Use character ability (with animations!)</p>
+    </div>
+  </div>
+
+  <script>
+    function launchGame() {
+      // Open game in a new window with specific dimensions
+      const gameWindow = window.open(
+        'game.html', 
+        'GameWindow', 
+        'width=900,height=700,scrollbars=no,resizable=yes,status=no,location=no,toolbar=no,menubar=no'
+      );
+      
+      if (gameWindow) {
+        gameWindow.focus();
+      } else {
+        alert('Please allow pop-ups for this site to launch the game in a new window!');
+      }
+    }
+    
+    function launchGameFullscreen() {
+      // Open game in a new window and attempt to make it fullscreen
+      const gameWindow = window.open(
+        'game.html', 
+        'GameWindowFullscreen', 
+        'fullscreen=yes,scrollbars=no,resizable=yes,status=no,location=no,toolbar=no,menubar=no'
+      );
+      
+      if (gameWindow) {
+        gameWindow.focus();
+        // Try to make it fullscreen (user interaction required)
+        setTimeout(() => {
+          if (gameWindow.document && gameWindow.document.documentElement) {
+            if (gameWindow.document.documentElement.requestFullscreen) {
+              gameWindow.document.documentElement.requestFullscreen().catch(e => {
+                console.log('Fullscreen request failed:', e);
+              });
+            }
+          }
+        }, 1000);
+      } else {
+        alert('Please allow pop-ups for this site to launch the game in a new window!');
+      }
+    }
+  </script>
+</body>
+</html>

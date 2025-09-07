@@ -1,0 +1,3057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2D Shooting Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    canvas {
+      background: #222;
+      display: block;
+      margin: 10px auto;
+      border: 2px solid #fff;
+      max-width: 100%;
+      height: auto;
+    }
+    
+    /* Mobile Controls */
+    .mobile-controls {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 120px;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      padding: 5px;
+      box-sizing: border-box;
+      border-top: 2px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .controls-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      height: 100%;
+      max-width: 100%;
+      margin: 0;
+      padding: 0 10px;
+    }
+    
+    .movement-pad {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      margin-bottom: 10px;
+    }
+    
+    .joystick-base {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    }
+    
+    .joystick-knob {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid rgba(255, 255, 255, 1);
+      position: absolute;
+      transition: all 0.1s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    
+    .joystick-base:active .joystick-knob {
+      background: rgba(255, 255, 255, 1);
+      transform: scale(1.1);
+    }
+    
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .action-btn {
+      width: 60px;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.25);
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      touch-action: manipulation;
+      cursor: pointer;
+      transition: all 0.1s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    
+    .action-btn:active {
+      background: rgba(255, 255, 255, 0.4);
+      transform: scale(0.95);
+    }
+    
+    .shoot-btn {
+      background: rgba(255, 0, 0, 0.3);
+      border-color: rgba(255, 0, 0, 0.7);
+    }
+    
+    .shoot-btn:active {
+      background: rgba(255, 0, 0, 0.5);
+    }
+    
+    .ability-btn {
+      background: rgba(0, 255, 255, 0.3);
+      border-color: rgba(0, 255, 255, 0.7);
+    }
+    
+    .ability-btn:active {
+      background: rgba(0, 255, 255, 0.5);
+    }
+    
+    .ability-btn.cooldown {
+      background: rgba(128, 128, 128, 0.3);
+      border-color: rgba(128, 128, 128, 0.7);
+      opacity: 0.5;
+    }
+    
+    /* Mobile responsive design */
+    @media (max-width: 768px) {
+      body {
+        padding: 0;
+        min-height: 100vh;
+        justify-content: flex-start;
+      }
+      
+      h1 {
+        font-size: 24px !important;
+        margin: 10px 0 !important;
+        position: relative !important;
+        transform: none !important;
+        top: auto !important;
+        left: auto !important;
+      }
+      
+      canvas {
+        width: 100vw !important;
+        height: calc(100vh - 150px) !important;
+        margin: 0 !important;
+        border: 1px solid #fff !important;
+        max-height: calc(100vh - 150px) !important;
+      }
+      
+      .menu {
+        padding: 10px;
+        min-height: auto;
+      }
+      
+      .character-button {
+        min-width: 200px !important;
+        min-height: 60px !important;
+        padding: 20px 30px !important;
+        font-size: 18px !important;
+        margin: 10px !important;
+      }
+      
+      .exit-button {
+        top: 5px !important;
+        right: 5px !important;
+        padding: 8px 12px !important;
+        font-size: 12px !important;
+      }
+      
+      .mobile-controls {
+        display: block;
+      }
+      
+      /* Mobile map grid layout */
+      #mapMenu div[style*="grid"] {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 10px !important;
+        max-width: 100% !important;
+        justify-items: center !important;
+      }
+      
+      #mapMenu .map-button:first-child {
+        grid-column: 1 / -1 !important;
+        width: 200px !important;
+        height: 60px !important;
+        min-width: 200px !important;
+        min-height: 60px !important;
+      }
+    }
+    
+    /* Android Phone Optimizations */
+    @media (max-width: 480px) and (orientation: portrait) {
+      .character-button {
+        min-width: 150px !important;
+        min-height: 42px !important;
+        padding: 10px 18px !important;
+        font-size: 13px !important;
+        margin: 6px !important;
+      }
+      
+      .map-button {
+        width: 100px !important;
+        height: 100px !important;
+        min-width: 100px !important;
+        min-height: 100px !important;
+        padding: 8px !important;
+        margin: 6px !important;
+        font-size: 12px !important;
+        border-radius: 10px !important;
+      }
+      
+      .map-button small {
+        font-size: 9px !important;
+        margin-top: 2px !important;
+      }
+      
+      .mobile-controls {
+        height: 110px;
+        padding: 4px;
+      }
+      
+      .movement-pad {
+        width: 75px;
+        height: 75px;
+        margin-bottom: 5px;
+      }
+      
+      .joystick-base {
+        width: 75px;
+        height: 75px;
+      }
+      
+      .joystick-knob {
+        width: 30px;
+        height: 30px;
+      }
+      
+      .action-btn {
+        width: 52px;
+        height: 52px;
+        font-size: 11px;
+      }
+      
+      .action-buttons {
+        gap: 6px;
+        margin-bottom: 5px;
+      }
+      
+      canvas {
+        height: calc(100vh - 140px) !important;
+        max-height: calc(100vh - 140px) !important;
+      }
+    }
+    
+    /* Small Android phones */
+    @media (max-width: 360px) and (orientation: portrait) {
+      .character-button {
+        min-width: 130px !important;
+        min-height: 38px !important;
+        padding: 8px 15px !important;
+        font-size: 12px !important;
+        margin: 5px !important;
+      }
+      
+      .map-button {
+        width: 90px !important;
+        height: 90px !important;
+        min-width: 90px !important;
+        min-height: 90px !important;
+        padding: 6px !important;
+        margin: 4px !important;
+        font-size: 11px !important;
+        border-radius: 8px !important;
+      }
+      
+      .map-button small {
+        font-size: 8px !important;
+        margin-top: 2px !important;
+      }
+      
+      .mobile-controls {
+        height: 100px;
+        padding: 3px;
+      }
+      
+      .controls-container {
+        padding: 0 5px;
+      }
+      
+      .movement-pad {
+        width: 65px;
+        height: 65px;
+        margin-bottom: 3px;
+      }
+      
+      .joystick-base {
+        width: 65px;
+        height: 65px;
+      }
+      
+      .joystick-knob {
+        width: 26px;
+        height: 26px;
+      }
+      
+      .action-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 10px;
+      }
+      
+      .action-buttons {
+        gap: 4px;
+        margin-bottom: 3px;
+      }
+      
+      canvas {
+        height: calc(100vh - 130px) !important;
+        max-height: calc(100vh - 130px) !important;
+      }
+      
+      h1 {
+        font-size: 18px !important;
+        margin: 3px 0 !important;
+      }
+    }
+    
+    /* Large Android phones */
+    @media (min-width: 481px) and (max-width: 600px) and (orientation: portrait) {
+      .mobile-controls {
+        height: 130px;
+        padding: 6px;
+      }
+      
+      .movement-pad {
+        width: 95px;
+        height: 95px;
+        margin-bottom: 8px;
+      }
+      
+      .joystick-base {
+        width: 95px;
+        height: 95px;
+      }
+      
+      .joystick-knob {
+        width: 38px;
+        height: 38px;
+      }
+      
+      .action-btn {
+        width: 65px;
+        height: 65px;
+        font-size: 13px;
+      }
+      
+      .action-buttons {
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      
+      canvas {
+        height: calc(100vh - 160px) !important;
+        max-height: calc(100vh - 160px) !important;
+      }
+    }
+    
+    /* Landscape mode for Android phones */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .mobile-controls {
+        height: 80px;
+        padding: 2px;
+      }
+      
+      .movement-pad {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 2px;
+      }
+      
+      .joystick-base {
+        width: 60px;
+        height: 60px;
+      }
+      
+      .joystick-knob {
+        width: 24px;
+        height: 24px;
+      }
+      
+      .action-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 9px;
+      }
+      
+      .action-buttons {
+        gap: 3px;
+        margin-bottom: 2px;
+      }
+      
+      canvas {
+        height: calc(100vh - 110px) !important;
+        max-height: calc(100vh - 110px) !important;
+      }
+      
+      h1 {
+        font-size: 16px !important;
+        margin: 2px 0 !important;
+      }
+      
+      .character-button, .map-button {
+        min-width: 120px !important;
+        min-height: 35px !important;
+        padding: 6px 12px !important;
+        font-size: 11px !important;
+        margin: 4px !important;
+      }
+    }
+    .menu {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+    }
+    button { margin: 5px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    
+    .character-button {
+      margin: 15px;
+      padding: 30px 50px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      border: 4px solid #fff;
+      border-radius: 15px;
+      transition: all 0.3s;
+      min-width: 250px;
+      min-height: 80px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .character-button.hunter {
+      background: linear-gradient(135deg, #4a0e4e, #8e44ad);
+      color: #fff;
+    }
+    
+    .character-button.titan {
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      color: #fff;
+    }
+    
+    .character-button.warlock {
+      background: linear-gradient(135deg, #166534, #22c55e);
+      color: #fff;
+    }
+    
+    .character-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    }
+    
+    .exit-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 0, 0, 0.8);
+      color: white;
+      border: 2px solid #fff;
+      padding: 10px 15px;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 14px;
+      z-index: 1000;
+    }
+    
+    .exit-button:hover {
+      background: rgba(255, 0, 0, 1);
+    }
+    
+    .map-button {
+      margin: 15px;
+      padding: 30px 50px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      border: 4px solid #fff;
+      border-radius: 15px;
+      transition: all 0.3s;
+      min-width: 250px;
+      min-height: 80px;
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .map-button.forest {
+      background: linear-gradient(135deg, #1a4d1a, #2d7d2d, #4da64d);
+    }
+    
+    .map-button.desert {
+      background: linear-gradient(135deg, #8b4513, #daa520, #f4a460);
+    }
+    
+    .map-button.city {
+      background: linear-gradient(135deg, #2c3e50, #34495e, #7f8c8d);
+    }
+    
+    .map-button.snow {
+      background: linear-gradient(135deg, #e3f2fd, #bbdefb, #90caf9);
+      color: #000;
+    }
+    
+    .map-button.volcano {
+      background: linear-gradient(135deg, #d32f2f, #f44336, #ff5722);
+    }
+    
+    .map-button.ocean {
+      background: linear-gradient(135deg, #0d47a1, #1976d2, #2196f3);
+    }
+    
+    .map-button.space {
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+    }
+    
+    .map-button.jungle {
+      background: linear-gradient(135deg, #2e7d32, #388e3c, #4caf50);
+    }
+    
+    .map-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <h1 style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); margin: 0;">2D Tactical Shooter</h1>
+  <div id="menu" class="menu">
+    <h2 style="font-size: 32px; margin-bottom: 40px;">Choose Your Character</h2>
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+      <button class="character-button hunter" onclick="chooseCharacter('hunter')">
+        🏹 Hunter<br>
+        <small style="font-size: 16px;">Teleport Ability</small>
+      </button>
+      <button class="character-button titan" onclick="chooseCharacter('titan')">
+        🛡️ Titan<br>
+        <small style="font-size: 16px;">Shield Ability</small>
+      </button>
+      <button class="character-button warlock" onclick="chooseCharacter('warlock')">
+        ✨ Warlock<br>
+        <small style="font-size: 16px;">Healing Rift</small>
+      </button>
+    </div>
+  </div>
+  <div id="mapMenu" class="menu" style="display:none;">
+    <h2 style="font-size: 32px; margin-bottom: 40px;">Choose Your Map</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 1200px; justify-items: center;">
+      <button class="map-button shooting-range" onclick="chooseMap('shooting_range')" style="grid-column: 1 / -1; background: linear-gradient(135deg, #ff6b35, #f7931e, #ffcc02); color: #000; font-weight: bold; border: 4px solid #000;">
+        🎯 Shooting Range<br>
+        <small style="font-size: 16px; color: #000;">Training Facility</small>
+      </button>
+      <button class="map-button forest" onclick="chooseMap('forest')">
+        🌲 Forest<br>
+        <small style="font-size: 16px;">Green Wilderness</small>
+      </button>
+      <button class="map-button desert" onclick="chooseMap('desert')">
+        🏜️ Desert<br>
+        <small style="font-size: 16px;">Sandy Dunes</small>
+      </button>
+      <button class="map-button city" onclick="chooseMap('city')">
+        🏙️ City<br>
+        <small style="font-size: 16px;">Urban Landscape</small>
+      </button>
+      <button class="map-button snow" onclick="chooseMap('snow')">
+        ❄️ Snow<br>
+        <small style="font-size: 16px;">Frozen Tundra</small>
+      </button>
+      <button class="map-button volcano" onclick="chooseMap('volcano')">
+        🌋 Volcano<br>
+        <small style="font-size: 16px;">Lava Fields</small>
+      </button>
+      <button class="map-button ocean" onclick="chooseMap('ocean')">
+        🌊 Ocean<br>
+        <small style="font-size: 16px;">Deep Waters</small>
+      </button>
+      <button class="map-button space" onclick="chooseMap('space')">
+        🚀 Space<br>
+        <small style="font-size: 16px;">Cosmic Void</small>
+      </button>
+      <button class="map-button jungle" onclick="chooseMap('jungle')">
+        🦜 Jungle<br>
+        <small style="font-size: 16px;">Dense Rainforest</small>
+      </button>
+    </div>
+    <button onclick="backToCharacterSelect()" style="margin-top: 30px; padding: 15px 30px; font-size: 18px; background: linear-gradient(135deg, #666, #888); color: white; border: 3px solid #fff; border-radius: 10px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+      ← Back to Character Select
+    </button>
+  </div>
+  <canvas id="gameCanvas" width="800" height="600" style="display:none;"></canvas>
+  <button id="exitButton" class="exit-button" onclick="exitToCharacterSelect()" style="display:none;">Exit to Character Select</button>
+  <button id="resetButton" class="exit-button" onclick="resetBossHealth()" style="display:none; top: 60px; background: rgba(0, 255, 0, 0.8);">Reset Boss Health</button>
+
+  <!-- Mobile Controls -->
+  <div id="mobileControls" class="mobile-controls">
+    <div class="controls-container">
+      <div class="movement-pad">
+        <div class="joystick-base" id="joystickBase">
+          <div class="joystick-knob" id="joystickKnob"></div>
+        </div>
+      </div>
+      <div class="action-buttons">
+        <button class="action-btn shoot-btn" id="mobileShootBtn">SHOOT</button>
+        <button class="action-btn ability-btn" id="mobileAbilityBtn">ABILITY</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let character = null;
+    let map = null;
+    let player = { x: 400, y: 300, speed: 1.5, ability: null, health: 100, maxHealth: 100 };
+    let bullets = [];
+    let animationState = { type: null, frame: 0, maxFrames: 90 };
+    let abilityCooldown = 0;
+    let keys = {};
+    let titanShield = { active: false, duration: 0, maxDuration: 1500 };
+    let warlockRift = { active: false, duration: 0, maxDuration: 1500, healRate: 2 };
+    let mapObjects = [];
+    let mouseX = 400;
+    let mouseY = 300;
+    let showCrosshair = false;
+    let enemies = [];
+    let bossEnemy = null;
+    let showResetButton = false;
+    
+    let hunterDamageBoost = { active: false, duration: 0, maxDuration: 3000 };
+    let warlockDamageBoost = { active: false };
+    let titanDamageAura = { active: false };
+    let damageZone = { x: 0, y: 0, radius: 30, damageTimer: 0, damageInterval: 300 };
+    let playerDead = false;
+    let respawnTimer = 0;
+    let respawnDuration = 600;
+    let gameState = 'playing';
+
+    // Mobile detection and touch controls
+    let isMobile = false;
+    let joystick = {
+      active: false,
+      centerX: 0,
+      centerY: 0,
+      knobX: 0,
+      knobY: 0,
+      maxDistance: 35,
+      moveX: 0,
+      moveY: 0
+    };
+    let touchControls = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      shoot: false,
+      ability: false
+    };
+
+    // Detect mobile device
+    function detectMobile() {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 768;
+      
+      return isMobileDevice || (isTouchDevice && isSmallScreen);
+    }
+
+    // Initialize mobile controls
+    function initMobileControls() {
+      isMobile = detectMobile();
+      
+      if (isMobile) {
+        // Initialize joystick
+        initJoystick();
+        
+        // Add touch event listeners for action buttons
+        const shootBtn = document.getElementById('mobileShootBtn');
+        const abilityBtn = document.getElementById('mobileAbilityBtn');
+        
+        shootBtn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          if (!playerDead) {
+            shoot();
+          }
+        });
+        
+        abilityBtn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          if (!playerDead && player.ability) {
+            player.ability();
+          }
+        });
+      }
+    }
+
+    // Initialize joystick controls
+    function initJoystick() {
+      const joystickBase = document.getElementById('joystickBase');
+      const joystickKnob = document.getElementById('joystickKnob');
+      
+      if (!joystickBase || !joystickKnob) return;
+      
+      // Get joystick center position
+      function updateJoystickCenter() {
+        const rect = joystickBase.getBoundingClientRect();
+        joystick.centerX = rect.left + rect.width / 2;
+        joystick.centerY = rect.top + rect.height / 2;
+      }
+      
+      updateJoystickCenter();
+      
+      // Touch start on joystick
+      joystickBase.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        joystick.active = true;
+        updateJoystickCenter();
+        handleJoystickMove(e.touches[0]);
+      });
+      
+      // Touch move on joystick
+      joystickBase.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (joystick.active) {
+          handleJoystickMove(e.touches[0]);
+        }
+      });
+      
+      // Touch end on joystick
+      joystickBase.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        resetJoystick();
+      });
+      
+      joystickBase.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        resetJoystick();
+      });
+    }
+
+    // Handle joystick movement
+    function handleJoystickMove(touch) {
+      const deltaX = touch.clientX - joystick.centerX;
+      const deltaY = touch.clientY - joystick.centerY;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      
+      if (distance <= joystick.maxDistance) {
+        joystick.knobX = deltaX;
+        joystick.knobY = deltaY;
+      } else {
+        const angle = Math.atan2(deltaY, deltaX);
+        joystick.knobX = Math.cos(angle) * joystick.maxDistance;
+        joystick.knobY = Math.sin(angle) * joystick.maxDistance;
+      }
+      
+      // Update knob position
+      const joystickKnob = document.getElementById('joystickKnob');
+      if (joystickKnob) {
+        joystickKnob.style.transform = `translate(${joystick.knobX}px, ${joystick.knobY}px)`;
+      }
+      
+      // Calculate movement values (-1 to 1)
+      joystick.moveX = joystick.knobX / joystick.maxDistance;
+      joystick.moveY = joystick.knobY / joystick.maxDistance;
+      
+      // Update crosshair position based on joystick direction
+      updateCrosshairFromJoystick();
+    }
+
+    // Reset joystick to center
+    function resetJoystick() {
+      joystick.active = false;
+      joystick.knobX = 0;
+      joystick.knobY = 0;
+      joystick.moveX = 0;
+      joystick.moveY = 0;
+      
+      const joystickKnob = document.getElementById('joystickKnob');
+      if (joystickKnob) {
+        joystickKnob.style.transform = 'translate(0px, 0px)';
+      }
+      
+      // Hide crosshair when not moving
+      if (isMobile) {
+        showCrosshair = false;
+      }
+    }
+
+    // Update crosshair position based on joystick direction
+    function updateCrosshairFromJoystick() {
+      if (isMobile && (Math.abs(joystick.moveX) > 0.1 || Math.abs(joystick.moveY) > 0.1)) {
+        const crosshairDistance = 80; // Distance from player to crosshair
+        mouseX = player.x + joystick.moveX * crosshairDistance;
+        mouseY = player.y + joystick.moveY * crosshairDistance;
+        
+        // Keep crosshair within canvas bounds
+        mouseX = Math.max(0, Math.min(canvas.width, mouseX));
+        mouseY = Math.max(0, Math.min(canvas.height, mouseY));
+        
+        showCrosshair = true;
+      }
+    }
+
+    // Touch event handlers for aiming
+    function handleTouchStart(e) {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        mouseX = (e.touches[0].clientX - rect.left) * scaleX;
+        mouseY = (e.touches[0].clientY - rect.top) * scaleY;
+        showCrosshair = true;
+      }
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        mouseX = (e.touches[0].clientX - rect.left) * scaleX;
+        mouseY = (e.touches[0].clientY - rect.top) * scaleY;
+      }
+    }
+
+    function handleTouchEnd(e) {
+      e.preventDefault();
+      if (e.touches.length === 0) {
+        showCrosshair = false;
+      }
+    }
+
+    // Update mobile controls visibility
+    function updateMobileControlsVisibility() {
+      const mobileControls = document.getElementById('mobileControls');
+      const gameCanvas = document.getElementById('gameCanvas');
+      
+      if (isMobile && gameCanvas.style.display !== 'none') {
+        mobileControls.style.display = 'block';
+        
+        // Update ability button state
+        const abilityBtn = document.getElementById('mobileAbilityBtn');
+        if (abilityCooldown > 0) {
+          abilityBtn.classList.add('cooldown');
+          abilityBtn.textContent = `ABILITY (${Math.ceil(abilityCooldown / 60)}s)`;
+        } else {
+          abilityBtn.classList.remove('cooldown');
+          abilityBtn.textContent = 'ABILITY';
+        }
+      } else {
+        mobileControls.style.display = 'none';
+      }
+    }
+
+    // Resize canvas for mobile with Android optimization
+    function resizeCanvasForMobile() {
+      if (isMobile && canvas.style.display !== 'none') {
+        const rect = canvas.getBoundingClientRect();
+        canvas.style.width = '100vw';
+        
+        // Adjust height based on screen size and orientation
+        const isLandscape = window.innerHeight < 500 && window.innerWidth > window.innerHeight;
+        
+        if (isLandscape) {
+          canvas.style.height = 'calc(100vh - 110px)';
+          canvas.style.maxHeight = 'calc(100vh - 110px)';
+        } else if (window.innerWidth <= 360) {
+          canvas.style.height = 'calc(100vh - 130px)';
+          canvas.style.maxHeight = 'calc(100vh - 130px)';
+        } else if (window.innerWidth <= 480) {
+          canvas.style.height = 'calc(100vh - 140px)';
+          canvas.style.maxHeight = 'calc(100vh - 140px)';
+        } else if (window.innerWidth <= 600) {
+          canvas.style.height = 'calc(100vh - 160px)';
+          canvas.style.maxHeight = 'calc(100vh - 160px)';
+        } else {
+          canvas.style.height = 'calc(100vh - 150px)';
+          canvas.style.maxHeight = 'calc(100vh - 150px)';
+        }
+      }
+    }
+
+    function chooseCharacter(ch) {
+      character = ch;
+      document.getElementById('menu').style.display = 'none';
+      document.getElementById('mapMenu').style.display = 'block';
+    }
+    
+    function backToCharacterSelect() {
+      // Reset character selection
+      character = null;
+      
+      // Hide map menu and show character select
+      document.getElementById('mapMenu').style.display = 'none';
+      document.getElementById('menu').style.display = 'block';
+    }
+    
+    function exitToCharacterSelect() {
+      // Reset game state
+      character = null;
+      map = null;
+      player = { x: 400, y: 300, speed: 1.5, ability: null, health: 100, maxHealth: 100 };
+      bullets = [];
+      animationState = { type: null, frame: 0, maxFrames: 30 };
+      abilityCooldown = 0;
+      keys = {};
+      titanShield = { active: false, duration: 0, maxDuration: 1500 };
+      warlockRift = { active: false, duration: 0, maxDuration: 1500, healRate: 2 };
+      
+      // Hide game elements and show character select
+      document.getElementById('gameCanvas').style.display = 'none';
+      document.getElementById('exitButton').style.display = 'none';
+      document.getElementById('resetButton').style.display = 'none';
+      document.getElementById('mapMenu').style.display = 'none';
+      document.getElementById('menu').style.display = 'block';
+      
+      // Hide mobile controls
+      document.getElementById('mobileControls').style.display = 'none';
+      
+      // Remove event listeners
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+      showCrosshair = false;
+    }
+
+    function chooseMap(m) {
+      map = m;
+      document.getElementById('mapMenu').style.display = 'none';
+      canvas.style.display = 'block';
+      document.getElementById('exitButton').style.display = 'block';
+      if (m === 'shooting_range') {
+        document.getElementById('resetButton').style.display = 'block';
+      }
+      generateMapObjects();
+      startGame();
+    }
+
+    function findSafeSpawnPosition() {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const borderOffset = 25;
+      let attempts = 0;
+      let maxAttempts = 50;
+      
+      // Try center position first
+      if (!checkCollision(centerX, centerY)) {
+        return { x: centerX, y: centerY };
+      }
+      
+      // Try random positions if center is blocked
+      while (attempts < maxAttempts) {
+        let x = Math.random() * (canvas.width - borderOffset * 2) + borderOffset;
+        let y = Math.random() * (canvas.height - borderOffset * 2) + borderOffset;
+        
+        if (!checkCollision(x, y)) {
+          return { x: x, y: y };
+        }
+        attempts++;
+      }
+      
+      // Fallback to center if no safe position found (shouldn't happen)
+      return { x: centerX, y: centerY };
+    }
+
+    function startGame() {
+      // Reset player stats completely and set character-specific stats
+      player.health = 100;
+      player.maxHealth = 100;
+      player.speed = 1.5; // Always reset to base speed
+      
+      // Reset all other game state
+      bullets = [];
+      animationState = { type: null, frame: 0, maxFrames: 90 }; // Much slower animations
+      abilityCooldown = 0;
+      keys = {};
+      titanShield = { active: false, duration: 0, maxDuration: 1500 };
+      warlockRift = { active: false, duration: 0, maxDuration: 1500, healRate: 2 };
+      
+      // Find a safe spawn position after objects are generated
+      const spawnPos = findSafeSpawnPosition();
+      player.x = spawnPos.x;
+      player.y = spawnPos.y;
+      
+      if (character === 'hunter') {
+        player.ability = () => triggerAbility('teleport');
+      }
+      if (character === 'titan') {
+        player.ability = () => triggerAbility('shield');
+      }
+      if (character === 'warlock') {
+        player.ability = () => triggerAbility('rift');
+      }
+
+      // Initialize mobile controls
+      initMobileControls();
+      
+      // Add desktop event listeners
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keyup', handleKeyUp);
+      
+      if (!isMobile) {
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseenter', () => showCrosshair = true);
+        canvas.addEventListener('mouseleave', () => showCrosshair = false);
+      }
+      
+      // Resize canvas for mobile
+      resizeCanvasForMobile();
+      
+      requestAnimationFrame(gameLoop);
+    }
+
+    function triggerAbility(type) {
+      if (abilityCooldown > 0) return;
+      animationState.type = type;
+      animationState.frame = 0;
+      
+      if (type === 'teleport' && character === 'hunter') {
+        abilityCooldown = 600;
+        const dx = mouseX - player.x;
+        const dy = mouseY - player.y;
+        const distanceToCrosshair = Math.sqrt(dx * dx + dy * dy);
+        const maxTeleportDistance = 156;
+        
+        let newX, newY;
+        
+        if (distanceToCrosshair <= maxTeleportDistance) {
+          // Teleport directly to crosshair if within range
+          newX = mouseX;
+          newY = mouseY;
+        } else {
+          // Teleport as far as possible toward crosshair
+          const normalizedDx = dx / distanceToCrosshair;
+          const normalizedDy = dy / distanceToCrosshair;
+          newX = player.x + normalizedDx * maxTeleportDistance;
+          newY = player.y + normalizedDy * maxTeleportDistance;
+        }
+        
+        const borderOffset = 25;
+        newX = Math.max(borderOffset, Math.min(canvas.width - borderOffset, newX));
+        newY = Math.max(borderOffset, Math.min(canvas.height - borderOffset, newY));
+        
+        if (!checkCollision(newX, newY)) {
+          player.x = newX;
+          player.y = newY;
+        } else {
+          let attempts = 0;
+          let maxAttempts = 8;
+          let foundSafe = false;
+          
+          while (attempts < maxAttempts && !foundSafe) {
+            let offsetX = (Math.random() - 0.5) * 40;
+            let offsetY = (Math.random() - 0.5) * 40;
+            let testX = newX + offsetX;
+            let testY = newY + offsetY;
+            
+            // Keep in bounds
+            testX = Math.max(borderOffset, Math.min(canvas.width - borderOffset, testX));
+            testY = Math.max(borderOffset, Math.min(canvas.height - borderOffset, testY));
+            
+            if (!checkCollision(testX, testY)) {
+              player.x = testX;
+              player.y = testY;
+              foundSafe = true;
+            }
+            attempts++;
+          }
+        }
+        
+        if (Math.random() < 0.20) {
+          player.health = Math.min(player.maxHealth, player.health + player.maxHealth * 0.2);
+        }
+        
+        if (Math.random() < 0.23) {
+          hunterDamageBoost.active = true;
+          hunterDamageBoost.duration = hunterDamageBoost.maxDuration;
+        }
+      }
+      
+      if (type === 'shield' && character === 'titan') {
+        // Titan shield - protective barrier for 25 seconds
+        abilityCooldown = 3000; // 50 seconds at 60fps
+        titanShield.active = true;
+        titanShield.duration = titanShield.maxDuration;
+        
+        // Titan special features
+        // If health is lower than 35%, heal by 35%
+        if (player.health < player.maxHealth * 0.35) {
+          player.health = Math.min(player.maxHealth, player.health + player.maxHealth * 0.35);
+        }
+        
+        titanDamageAura.active = true;
+      }
+      
+      if (type === 'rift' && character === 'warlock') {
+        // Warlock rift - healing field that follows player for 25 seconds
+        abilityCooldown = 3000; // 50 seconds at 60fps
+        warlockRift.active = true;
+        warlockRift.duration = warlockRift.maxDuration;
+        
+        // Warlock special feature - 20% damage boost while rift is active
+        warlockDamageBoost.active = true;
+      }
+    }
+
+    function resetBossHealth() {
+      if (bossEnemy) {
+        bossEnemy.health = bossEnemy.maxHealth;
+      }
+    }
+
+    function handleMouseMove(e) {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    }
+
+    function shoot() {
+      const dx = mouseX - player.x;
+      const dy = mouseY - player.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const bulletSpeed = 4;
+      const normalizedDx = (dx / distance) * bulletSpeed;
+      const normalizedDy = (dy / distance) * bulletSpeed;
+      
+      bullets.push({
+        x: player.x,
+        y: player.y,
+        dx: normalizedDx,
+        dy: normalizedDy,
+        life: 150,
+        trail: []
+      });
+    }
+
+    function handleKeyDown(e) {
+      if (playerDead) return;
+      
+      keys[e.key.toLowerCase()] = true;
+      
+      if (e.key === ' ') {
+        e.preventDefault();
+        shoot();
+      }
+      if (e.key === 'Shift') {
+        e.preventDefault();
+        player.ability();
+      }
+    }
+    
+    function handleKeyUp(e) {
+      keys[e.key.toLowerCase()] = false;
+    }
+    
+    function checkCollision(newX, newY) {
+      const playerRadius = 12; // Slightly smaller for more responsive movement
+      
+      for (let obj of mapObjects) {
+        let objRadius, objX, objY, objWidth, objHeight;
+        
+        switch(obj.type) {
+          case 'tree':
+            // More precise tree collision - only trunk and lower canopy
+            objRadius = obj.size * 0.5; // Smaller collision radius for better movement
+            objX = obj.x;
+            objY = obj.y - obj.size * 0.2; // Adjusted for trunk position
+            break;
+          case 'cactus':
+            // More precise cactus collision
+            objWidth = obj.size * 0.5; // Slightly larger for better collision
+            objHeight = obj.size * 0.9; // More accurate height
+            objX = obj.x;
+            objY = obj.y - obj.size / 2;
+            break;
+          case 'building':
+            // Buildings remain the same for realism
+            objWidth = obj.width * 0.9; // Slightly smaller for easier navigation
+            objHeight = obj.height * 0.9;
+            objX = obj.x;
+            objY = obj.y - obj.height / 2;
+            break;
+          case 'snowpile':
+          case 'lavarock':
+          case 'coral':
+          case 'asteroid':
+          case 'vine':
+            // More responsive collision for round objects
+            objRadius = obj.size * 0.8; // Smaller collision radius
+            objX = obj.x;
+            objY = obj.y;
+            break;
+        }
+        
+        // Check collision based on object type with buffer zone
+        if (obj.type === 'cactus' || obj.type === 'building') {
+          // Rectangle collision for cacti and buildings with small buffer
+          const buffer = 2;
+          if (newX + playerRadius > objX - objWidth/2 - buffer &&
+              newX - playerRadius < objX + objWidth/2 + buffer &&
+              newY + playerRadius > objY - objHeight/2 - buffer &&
+              newY - playerRadius < objY + objHeight/2 + buffer) {
+            return true;
+          }
+        } else {
+          // Circle collision for other objects with small buffer
+          const buffer = 1;
+          const distance = Math.sqrt((newX - objX) ** 2 + (newY - objY) ** 2);
+          if (distance < playerRadius + objRadius + buffer) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function updateMovement() {
+      if (playerDead) return;
+      if (player.speed !== 1.5) player.speed = 1.5;
+      
+      let moveX = 0;
+      let moveY = 0;
+      
+      // Handle mobile joystick input
+      if (isMobile && joystick.active) {
+        moveX = joystick.moveX * player.speed;
+        moveY = joystick.moveY * player.speed;
+      } else {
+        // Handle desktop keyboard input
+        if (keys['w']) moveY -= player.speed;
+        if (keys['s']) moveY += player.speed;
+        if (keys['a']) moveX -= player.speed;
+        if (keys['d']) moveX += player.speed;
+      }
+      
+      let newX = player.x + moveX;
+      let newY = player.y + moveY;
+      const borderOffset = 25;
+      newX = Math.max(borderOffset, Math.min(canvas.width - borderOffset, newX));
+      newY = Math.max(borderOffset, Math.min(canvas.height - borderOffset, newY));
+      
+      if (!checkCollision(newX, newY)) {
+        player.x = newX;
+        player.y = newY;
+      } else {
+        let testX = player.x + moveX;
+        testX = Math.max(borderOffset, Math.min(canvas.width - borderOffset, testX));
+        
+        if (!checkCollision(testX, player.y)) {
+          player.x = testX;
+        } else {
+          // If horizontal movement is blocked, try sliding along the object
+          let slideDistance = player.speed * 0.5;
+          if (moveX > 0 && !checkCollision(player.x + slideDistance, player.y)) {
+            player.x += slideDistance;
+          } else if (moveX < 0 && !checkCollision(player.x - slideDistance, player.y)) {
+            player.x -= slideDistance;
+          }
+        }
+        
+        let testY = player.y + moveY;
+        testY = Math.max(borderOffset, Math.min(canvas.height - borderOffset, testY));
+        
+        if (!checkCollision(player.x, testY)) {
+          player.y = testY;
+        } else {
+          // If vertical movement is blocked, try sliding along the object
+          let slideDistance = player.speed * 0.5;
+          if (moveY > 0 && !checkCollision(player.x, player.y + slideDistance)) {
+            player.y += slideDistance;
+          } else if (moveY < 0 && !checkCollision(player.x, player.y - slideDistance)) {
+            player.y -= slideDistance;
+          }
+        }
+        
+        if (checkCollision(player.x, player.y)) {
+          const pushDistance = 3;
+          const directions = [
+            {x: pushDistance, y: 0},
+            {x: -pushDistance, y: 0},
+            {x: 0, y: pushDistance},
+            {x: 0, y: -pushDistance},
+            {x: pushDistance, y: pushDistance},
+            {x: -pushDistance, y: -pushDistance},
+            {x: pushDistance, y: -pushDistance},
+            {x: -pushDistance, y: pushDistance}
+          ];
+          
+          for (let dir of directions) {
+            let pushX = player.x + dir.x;
+            let pushY = player.y + dir.y;
+            pushX = Math.max(borderOffset, Math.min(canvas.width - borderOffset, pushX));
+            pushY = Math.max(borderOffset, Math.min(canvas.height - borderOffset, pushY));
+            
+            if (!checkCollision(pushX, pushY)) {
+              player.x = pushX;
+              player.y = pushY;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    function generateMapObjects() {
+      mapObjects = [];
+      const borderOffset = 50;
+      
+      if (map === 'forest') {
+        // Generate more trees for a denser forest
+        for (let i = 0; i < 25; i++) {
+          mapObjects.push({
+            type: 'tree',
+            x: Math.random() * (canvas.width - borderOffset * 2) + borderOffset,
+            y: Math.random() * (canvas.height - borderOffset * 2) + borderOffset,
+            size: Math.random() * 25 + 12 // Varied tree sizes
+          });
+        }
+      } else if (map === 'desert') {
+        // Generate cacti
+        for (let i = 0; i < 12; i++) {
+          mapObjects.push({
+            type: 'cactus',
+            x: Math.random() * (canvas.width - borderOffset * 2) + borderOffset,
+            y: Math.random() * (canvas.height - borderOffset * 2) + borderOffset,
+            size: Math.random() * 25 + 20
+          });
+        }
+      } else if (map === 'city') {
+        // Generate buildings
+        for (let i = 0; i < 10; i++) {
+          mapObjects.push({
+            type: 'building',
+            x: Math.random() * (canvas.width - borderOffset * 2) + borderOffset,
+            y: Math.random() * (canvas.height - borderOffset * 2) + borderOffset,
+            width: Math.random() * 60 + 40,
+            height: Math.random() * 80 + 60
+          });
+        }
+      } else if (map === 'snow') {
+        // Generate snow piles and ice crystals
+        for (let i = 0; i < 20; i++) {
+          mapObjects.push({
+            type: 'snowpile',
+            x: Math.random() * (canvas.width - borderOffset * 2) + borderOffset,
+            y: Math.random() * (canvas.height - borderOffset * 2) + borderOffset,
+            size: Math.random() * 15 + 10
+          });
+        }
+      } else if (map === 'volcano') {
+        // Generate lava rocks
+        for (let i = 0; i < 18; i++) {
+          mapObjects.push({
+            type: 'lavarock',
+            x: Math.random() * (canvas.width - borderOffset * 2) + borderOffset,
+            y: Math.random() * (canvas.height - borderOffset * 2) + borderOffset,
+            size: Math.random() * 20 + 15
+          });
+        }
+      } else if (map === 'ocean') {
+        // Generate coral and seaweed
+        for (let i = 0; i < 16; i++) {
+          mapObjects.push({
+            type: 'coral',
+            x: Math.random() * (canvas.width - borderOffset * 2) + borderOffset,
+            y: Math.random() * (canvas.height - borderOffset * 2) + borderOffset,
+            size: Math.random() * 18 + 12
+          });
+        }
+      } else if (map === 'space') {
+        // Generate asteroids
+        for (let i = 0; i < 14; i++) {
+          mapObjects.push({
+            type: 'asteroid',
+            x: Math.random() * (canvas.width - borderOffset * 2) + borderOffset,
+            y: Math.random() * (canvas.height - borderOffset * 2) + borderOffset,
+            size: Math.random() * 25 + 20
+          });
+        }
+      } else if (map === 'jungle') {
+        // Generate vines and large leaves
+        for (let i = 0; i < 22; i++) {
+          mapObjects.push({
+            type: 'vine',
+            x: Math.random() * (canvas.width - borderOffset * 2) + borderOffset,
+            y: Math.random() * (canvas.height - borderOffset * 2) + borderOffset,
+            size: Math.random() * 16 + 14
+          });
+        }
+      } else if (map === 'shooting_range') {
+        // Generate shooting range - clean environment with targets
+        enemies = [];
+        
+        // Create 5 mini training dummies
+        const dummyPositions = [
+          {x: 150, y: 150},
+          {x: 650, y: 150},
+          {x: 150, y: 450},
+          {x: 650, y: 450},
+          {x: 400, y: 100}
+        ];
+        
+        const abilities = ['shield', 'shield', 'rift', 'rift', null];
+        
+        for (let i = 0; i < 5; i++) {
+          let ability = abilities[i];
+          let abilityDuration = ability ? Infinity : 0; // Always active if has ability
+          
+          enemies.push({
+            x: dummyPositions[i].x,
+            y: dummyPositions[i].y,
+            health: 1000,
+            maxHealth: 1000,
+            type: 'dummy',
+            ability: ability,
+            abilityDuration: abilityDuration,
+            size: 20
+          });
+        }
+        
+        bossEnemy = {
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          health: 100000,
+          maxHealth: 100000,
+          type: 'boss',
+          ability: null,
+          abilityDuration: 0,
+          size: 50
+        };
+        
+        damageZone.x = 200;
+        damageZone.y = 300;
+        damageZone.damageTimer = 0;
+        
+        showResetButton = true;
+      }
+    }
+
+    function drawMapObjects() {
+      mapObjects.forEach(obj => {
+        switch(obj.type) {
+          case 'tree':
+            // Draw realistic tree shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(obj.x + 2, obj.y + 2, obj.size * 0.4, obj.size * 0.15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw tree trunk - proper proportions like a real tree
+            const trunkWidth = obj.size * 0.15; // Much thinner trunk
+            const trunkHeight = obj.size * 1.2; // Taller trunk
+            
+            // Trunk gradient for 3D effect
+            const trunkGradient = ctx.createLinearGradient(obj.x - trunkWidth, 0, obj.x + trunkWidth, 0);
+            trunkGradient.addColorStop(0, '#2D1B13');
+            trunkGradient.addColorStop(0.3, '#4A3728');
+            trunkGradient.addColorStop(0.7, '#654321');
+            trunkGradient.addColorStop(1, '#3D2B1F');
+            ctx.fillStyle = trunkGradient;
+            ctx.fillRect(obj.x - trunkWidth, obj.y - trunkHeight, trunkWidth * 2, trunkHeight);
+            
+            // Add bark texture
+            ctx.strokeStyle = '#2D1B13';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 6; i++) {
+              let barkY = obj.y - trunkHeight + (i / 5) * trunkHeight;
+              ctx.beginPath();
+              ctx.moveTo(obj.x - trunkWidth, barkY);
+              ctx.lineTo(obj.x + trunkWidth, barkY);
+              ctx.stroke();
+            }
+            
+            // Draw realistic tree canopy - proper tree shape
+            const canopyRadius = obj.size * 0.8;
+            const canopyY = obj.y - trunkHeight - canopyRadius * 0.3; // Position canopy above trunk
+            
+            // Create natural tree canopy shape (not perfect circle)
+            ctx.fillStyle = '#0F4F0F';
+            ctx.beginPath();
+            // Draw irregular canopy shape
+            for (let angle = 0; angle < Math.PI * 2; angle += 0.2) {
+              let radius = canopyRadius + Math.sin(angle * 3) * (canopyRadius * 0.15);
+              let x = obj.x + Math.cos(angle) * radius;
+              let y = canopyY + Math.sin(angle) * radius * 0.8; // Slightly flattened
+              if (angle === 0) {
+                ctx.moveTo(x, y);
+              } else {
+                ctx.lineTo(x, y);
+              }
+            }
+            ctx.closePath();
+            ctx.fill();
+            
+            // Add lighter green highlights on canopy
+            ctx.fillStyle = '#1F5F1F';
+            ctx.beginPath();
+            for (let angle = 0; angle < Math.PI * 2; angle += 0.3) {
+              let radius = canopyRadius * 0.6 + Math.sin(angle * 2) * (canopyRadius * 0.1);
+              let x = obj.x + Math.cos(angle) * radius;
+              let y = canopyY + Math.sin(angle) * radius * 0.7;
+              if (angle === 0) {
+                ctx.moveTo(x, y);
+              } else {
+                ctx.lineTo(x, y);
+              }
+            }
+            ctx.closePath();
+            ctx.fill();
+            
+            // Add some individual leaf clusters for texture
+            ctx.fillStyle = '#0A3A0A';
+            for (let i = 0; i < 12; i++) {
+              let angle = (i / 12) * Math.PI * 2;
+              let distance = canopyRadius * (0.5 + Math.random() * 0.3);
+              let leafX = obj.x + Math.cos(angle) * distance;
+              let leafY = canopyY + Math.sin(angle) * distance * 0.7;
+              ctx.beginPath();
+              ctx.arc(leafX, leafY, 3, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            
+            // Add main branches visible through canopy
+            ctx.strokeStyle = '#4A3728';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            for (let i = 0; i < 4; i++) {
+              let branchAngle = (i / 4) * Math.PI * 2;
+              let branchLength = canopyRadius * 0.6;
+              ctx.beginPath();
+              ctx.moveTo(obj.x, obj.y - trunkHeight);
+              ctx.lineTo(
+                obj.x + Math.cos(branchAngle) * branchLength,
+                canopyY + Math.sin(branchAngle) * branchLength * 0.5
+              );
+              ctx.stroke();
+            }
+            
+            // Add trunk highlight
+            ctx.fillStyle = 'rgba(139, 69, 19, 0.3)';
+            ctx.fillRect(obj.x - trunkWidth * 0.3, obj.y - trunkHeight, trunkWidth * 0.6, trunkHeight);
+            
+            // Strong black outline for visibility
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            // Outline the canopy
+            for (let angle = 0; angle < Math.PI * 2; angle += 0.2) {
+              let radius = canopyRadius + Math.sin(angle * 3) * (canopyRadius * 0.15);
+              let x = obj.x + Math.cos(angle) * radius;
+              let y = canopyY + Math.sin(angle) * radius * 0.8;
+              if (angle === 0) {
+                ctx.moveTo(x, y);
+              } else {
+                ctx.lineTo(x, y);
+              }
+            }
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Outline the trunk
+            ctx.strokeRect(obj.x - trunkWidth, obj.y - trunkHeight, trunkWidth * 2, trunkHeight);
+            break;
+            
+          case 'cactus':
+            // Draw ultra-realistic layered shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(obj.x - obj.size * 0.35, obj.y + 4, obj.size * 0.7, 8);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(obj.x - obj.size * 0.3, obj.y + 2, obj.size * 0.6, 6);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(obj.x - obj.size * 0.25, obj.y + 1, obj.size * 0.5, 4);
+            
+            // Draw realistic cactus body with complex gradient and ribbing
+            const cactusGradient = ctx.createLinearGradient(obj.x - obj.size * 0.3, 0, obj.x + obj.size * 0.3, 0);
+            cactusGradient.addColorStop(0, '#0F5F0F');
+            cactusGradient.addColorStop(0.15, '#1F7A1F');
+            cactusGradient.addColorStop(0.3, '#228B22');
+            cactusGradient.addColorStop(0.5, '#32CD32');
+            cactusGradient.addColorStop(0.7, '#228B22');
+            cactusGradient.addColorStop(0.85, '#1F7A1F');
+            cactusGradient.addColorStop(1, '#0F5F0F');
+            ctx.fillStyle = cactusGradient;
+            ctx.fillRect(obj.x - obj.size * 0.3, obj.y - obj.size, obj.size * 0.6, obj.size);
+            
+            // Add vertical ribs with shadows
+            ctx.strokeStyle = '#0F5F0F';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 8; i++) {
+              let ribX = obj.x - obj.size * 0.25 + (i / 7) * obj.size * 0.5;
+              ctx.beginPath();
+              ctx.moveTo(ribX, obj.y - obj.size);
+              ctx.lineTo(ribX, obj.y);
+              ctx.stroke();
+            }
+            
+            // Add horizontal segments
+            ctx.strokeStyle = '#1F7A1F';
+            ctx.lineWidth = 2;
+            for (let i = 1; i < 6; i++) {
+              let segmentY = obj.y - obj.size + (i / 6) * obj.size;
+              ctx.beginPath();
+              ctx.moveTo(obj.x - obj.size * 0.3, segmentY);
+              ctx.lineTo(obj.x + obj.size * 0.3, segmentY);
+              ctx.stroke();
+            }
+            
+            // Draw realistic cactus arms with proper perspective
+            const armGradient = ctx.createLinearGradient(obj.x - obj.size * 0.6, 0, obj.x - obj.size * 0.3, 0);
+            armGradient.addColorStop(0, '#0F5F0F');
+            armGradient.addColorStop(0.5, '#228B22');
+            armGradient.addColorStop(1, '#1F7A1F');
+            ctx.fillStyle = armGradient;
+            
+            // Left arm
+            ctx.fillRect(obj.x - obj.size * 0.6, obj.y - obj.size * 0.7, obj.size * 0.3, obj.size * 0.4);
+            // Right arm
+            ctx.fillRect(obj.x + obj.size * 0.3, obj.y - obj.size * 0.5, obj.size * 0.3, obj.size * 0.4);
+            
+            // Add arm ribs
+            ctx.strokeStyle = '#0F5F0F';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 4; i++) {
+              // Left arm ribs
+              let leftRibX = obj.x - obj.size * 0.55 + (i / 3) * obj.size * 0.25;
+              ctx.beginPath();
+              ctx.moveTo(leftRibX, obj.y - obj.size * 0.7);
+              ctx.lineTo(leftRibX, obj.y - obj.size * 0.3);
+              ctx.stroke();
+              
+              // Right arm ribs
+              let rightRibX = obj.x + obj.size * 0.35 + (i / 3) * obj.size * 0.25;
+              ctx.beginPath();
+              ctx.moveTo(rightRibX, obj.y - obj.size * 0.5);
+              ctx.lineTo(rightRibX, obj.y - obj.size * 0.1);
+              ctx.stroke();
+            }
+            
+            // Add ultra-realistic spine clusters (areoles)
+            ctx.fillStyle = '#654321';
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 1;
+            
+            // Main body spines
+            for (let rib = 0; rib < 8; rib++) {
+              let ribX = obj.x - obj.size * 0.25 + (rib / 7) * obj.size * 0.5;
+              for (let i = 0; i < 25; i++) {
+                let spineY = obj.y - obj.size + (i / 25) * obj.size;
+                
+                // Draw areole (spine cluster base)
+                ctx.fillStyle = '#654321';
+                ctx.beginPath();
+                ctx.arc(ribX, spineY, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw multiple spines per areole
+                ctx.strokeStyle = '#8B4513';
+                for (let spine = 0; spine < 6; spine++) {
+                  let spineAngle = (spine / 6) * Math.PI * 2;
+                  let spineLength = 4 + Math.random() * 3;
+                  let spineEndX = ribX + Math.cos(spineAngle) * spineLength;
+                  let spineEndY = spineY + Math.sin(spineAngle) * spineLength;
+                  
+                  ctx.beginPath();
+                  ctx.moveTo(ribX, spineY);
+                  ctx.lineTo(spineEndX, spineEndY);
+                  ctx.stroke();
+                }
+              }
+            }
+            
+            // Add waxy shine effect
+            const shineGradient = ctx.createLinearGradient(obj.x - obj.size * 0.2, 0, obj.x - obj.size * 0.1, 0);
+            shineGradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+            shineGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = shineGradient;
+            ctx.fillRect(obj.x - obj.size * 0.2, obj.y - obj.size, obj.size * 0.1, obj.size);
+            
+            // Strong outline for visibility
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(obj.x - obj.size * 0.3, obj.y - obj.size, obj.size * 0.6, obj.size);
+            break;
+            
+          case 'building':
+            // Draw shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(obj.x - obj.width/2 + 3, obj.y - obj.height + 3, obj.width, obj.height);
+            
+            // Draw building with gradient
+            const buildingGradient = ctx.createLinearGradient(obj.x - obj.width/2, 0, obj.x + obj.width/2, 0);
+            buildingGradient.addColorStop(0, '#5A5A5A');
+            buildingGradient.addColorStop(0.5, '#696969');
+            buildingGradient.addColorStop(1, '#4F4F4F');
+            ctx.fillStyle = buildingGradient;
+            ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+            
+            // Draw windows with glow effect
+            for (let i = 0; i < 3; i++) {
+              for (let j = 0; j < Math.floor(obj.height/20); j++) {
+                let winX = obj.x - obj.width/2 + 10 + i * 15;
+                let winY = obj.y - obj.height + 10 + j * 20;
+                
+                // Window glow
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+                ctx.fillRect(winX - 2, winY - 2, 12, 12);
+                
+                // Window
+                ctx.fillStyle = '#FFD700';
+                ctx.fillRect(winX, winY, 8, 8);
+                
+                // Window frame
+                ctx.strokeStyle = '#4F4F4F';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(winX, winY, 8, 8);
+              }
+            }
+            
+            // Building outline
+            ctx.strokeStyle = '#2F2F2F';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+            break;
+            
+          case 'snowpile':
+            // Draw shadow
+            ctx.fillStyle = 'rgba(70, 130, 180, 0.2)';
+            ctx.beginPath();
+            ctx.arc(obj.x + 1, obj.y + 1, obj.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw snow with radial gradient
+            const snowGradient = ctx.createRadialGradient(obj.x, obj.y, 0, obj.x, obj.y, obj.size);
+            snowGradient.addColorStop(0, '#FFFFFF');
+            snowGradient.addColorStop(0.7, '#FFFAFA');
+            snowGradient.addColorStop(1, '#F0F8FF');
+            ctx.fillStyle = snowGradient;
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y, obj.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add sparkle effects
+            ctx.fillStyle = '#E6F3FF';
+            for (let i = 0; i < 6; i++) {
+              let angle = (i / 6) * Math.PI * 2;
+              let sparkleX = obj.x + Math.cos(angle) * obj.size * 0.6;
+              let sparkleY = obj.y + Math.sin(angle) * obj.size * 0.6;
+              ctx.beginPath();
+              ctx.arc(sparkleX, sparkleY, 1, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            
+            // Add blue outline for visibility
+            ctx.strokeStyle = '#4682B4';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            break;
+            
+          case 'lavarock':
+            // Draw glow effect first
+            const glowGradient = ctx.createRadialGradient(obj.x, obj.y, 0, obj.x, obj.y, obj.size * 1.5);
+            glowGradient.addColorStop(0, 'rgba(255, 69, 0, 0.6)');
+            glowGradient.addColorStop(0.5, 'rgba(255, 69, 0, 0.3)');
+            glowGradient.addColorStop(1, 'rgba(255, 69, 0, 0)');
+            ctx.fillStyle = glowGradient;
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y, obj.size * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw rock with gradient
+            const rockGradient = ctx.createRadialGradient(obj.x, obj.y, 0, obj.x, obj.y, obj.size);
+            rockGradient.addColorStop(0, '#FF4500');
+            rockGradient.addColorStop(0.6, '#DC143C');
+            rockGradient.addColorStop(1, '#8B0000');
+            ctx.fillStyle = rockGradient;
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y, obj.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add lava cracks
+            ctx.strokeStyle = '#FFFF00';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 4; i++) {
+              let angle = (i / 4) * Math.PI * 2;
+              ctx.beginPath();
+              ctx.moveTo(obj.x, obj.y);
+              ctx.lineTo(obj.x + Math.cos(angle) * obj.size * 0.8, obj.y + Math.sin(angle) * obj.size * 0.8);
+              ctx.stroke();
+            }
+            
+            // Add hot core
+            ctx.fillStyle = '#FFFF00';
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y, obj.size * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+            
+          case 'coral':
+            // Draw shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.beginPath();
+            ctx.arc(obj.x + 1, obj.y + 1, obj.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw coral base with gradient
+            const coralGradient = ctx.createRadialGradient(obj.x, obj.y, 0, obj.x, obj.y, obj.size);
+            coralGradient.addColorStop(0, '#FF8C69');
+            coralGradient.addColorStop(0.7, '#FF7F50');
+            coralGradient.addColorStop(1, '#FF6347');
+            ctx.fillStyle = coralGradient;
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y, obj.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add coral branches with varying thickness
+            ctx.strokeStyle = '#FF4500';
+            ctx.lineCap = 'round';
+            for (let i = 0; i < 6; i++) {
+              let angle = (i / 6) * Math.PI * 2;
+              let branchLength = obj.size * (0.8 + Math.random() * 0.4);
+              ctx.lineWidth = 3 + Math.random() * 2;
+              ctx.beginPath();
+              ctx.moveTo(obj.x, obj.y);
+              ctx.lineTo(obj.x + Math.cos(angle) * branchLength, obj.y + Math.sin(angle) * branchLength);
+              ctx.stroke();
+            }
+            
+            // Add coral polyps
+            ctx.fillStyle = '#FFB6C1';
+            for (let i = 0; i < 8; i++) {
+              let angle = (i / 8) * Math.PI * 2;
+              let polypX = obj.x + Math.cos(angle) * obj.size * 0.7;
+              let polypY = obj.y + Math.sin(angle) * obj.size * 0.7;
+              ctx.beginPath();
+              ctx.arc(polypX, polypY, 1.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            break;
+            
+          case 'asteroid':
+            // Draw space glow
+            ctx.fillStyle = 'rgba(112, 128, 144, 0.3)';
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y, obj.size * 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw asteroid with gradient
+            const asteroidGradient = ctx.createRadialGradient(obj.x - obj.size * 0.3, obj.y - obj.size * 0.3, 0, obj.x, obj.y, obj.size);
+            asteroidGradient.addColorStop(0, '#A9A9A9');
+            asteroidGradient.addColorStop(0.6, '#708090');
+            asteroidGradient.addColorStop(1, '#2F4F4F');
+            ctx.fillStyle = asteroidGradient;
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y, obj.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add multiple craters
+            ctx.fillStyle = '#1C1C1C';
+            for (let i = 0; i < 4; i++) {
+              let craterX = obj.x + (Math.random() - 0.5) * obj.size;
+              let craterY = obj.y + (Math.random() - 0.5) * obj.size;
+              let craterSize = obj.size * (0.1 + Math.random() * 0.2);
+              ctx.beginPath();
+              ctx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            
+            // Add metallic highlights
+            ctx.fillStyle = '#C0C0C0';
+            for (let i = 0; i < 3; i++) {
+              let highlightX = obj.x + (Math.random() - 0.5) * obj.size * 0.6;
+              let highlightY = obj.y + (Math.random() - 0.5) * obj.size * 0.6;
+              ctx.beginPath();
+              ctx.arc(highlightX, highlightY, 1, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            break;
+            
+          case 'vine':
+            // Draw shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.arc(obj.x + 1, obj.y + 1, obj.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw vine base with gradient
+            const vineGradient = ctx.createRadialGradient(obj.x, obj.y, 0, obj.x, obj.y, obj.size);
+            vineGradient.addColorStop(0, '#228B22');
+            vineGradient.addColorStop(0.7, '#006400');
+            vineGradient.addColorStop(1, '#004000');
+            ctx.fillStyle = vineGradient;
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y, obj.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add multiple vine tendrils
+            ctx.strokeStyle = '#32CD32';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            for (let i = 0; i < 4; i++) {
+              let angle = (i / 4) * Math.PI * 2;
+              let tendrilLength = obj.size * (1.2 + Math.random() * 0.6);
+              ctx.beginPath();
+              ctx.moveTo(obj.x, obj.y);
+              
+              // Create curved tendril
+              let controlX = obj.x + Math.cos(angle) * tendrilLength * 0.7;
+              let controlY = obj.y + Math.sin(angle) * tendrilLength * 0.7;
+              let endX = obj.x + Math.cos(angle + 0.5) * tendrilLength;
+              let endY = obj.y + Math.sin(angle + 0.5) * tendrilLength;
+              
+              ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+              ctx.stroke();
+            }
+            
+            // Add leaves along vines
+            ctx.fillStyle = '#90EE90';
+            for (let i = 0; i < 6; i++) {
+              let angle = (i / 6) * Math.PI * 2;
+              let leafX = obj.x + Math.cos(angle) * obj.size * 0.8;
+              let leafY = obj.y + Math.sin(angle) * obj.size * 0.8;
+              ctx.beginPath();
+              ctx.ellipse(leafX, leafY, 3, 2, angle, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            break;
+        }
+      });
+    }
+
+    function drawMapBackground() {
+      switch(map) {
+        case 'forest':
+          // Forest ground with grass texture
+          ctx.fillStyle = '#228B22';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Add grass patches
+          ctx.fillStyle = '#32CD32';
+          for (let i = 0; i < 100; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.fillRect(x, y, 3, 2);
+          }
+          // Add dirt patches
+          ctx.fillStyle = '#8B4513';
+          for (let i = 0; i < 50; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.beginPath();
+            ctx.arc(x, y, 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+          
+        case 'desert':
+          // Desert with sand dunes and texture
+          ctx.fillStyle = '#F4A460';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Add sand ripples
+          ctx.strokeStyle = '#DEB887';
+          ctx.lineWidth = 1;
+          for (let i = 0; i < 30; i++) {
+            let y = Math.random() * canvas.height;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.quadraticCurveTo(canvas.width/2, y + Math.random() * 10 - 5, canvas.width, y);
+            ctx.stroke();
+          }
+          // Add sand particles
+          ctx.fillStyle = '#DEB887';
+          for (let i = 0; i < 200; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.fillRect(x, y, 1, 1);
+          }
+          break;
+          
+        case 'city':
+          // City with concrete and asphalt
+          ctx.fillStyle = '#696969';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Add concrete texture
+          ctx.fillStyle = '#778899';
+          for (let i = 0; i < 150; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.fillRect(x, y, 2, 2);
+          }
+          // Add road lines
+          ctx.strokeStyle = '#FFFF00';
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 5; i++) {
+            let y = (i + 1) * canvas.height / 6;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+          }
+          ctx.setLineDash([]);
+          break;
+          
+        case 'snow':
+          // Snow with ice patches
+          ctx.fillStyle = '#F0F8FF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Add snowflakes
+          ctx.fillStyle = '#FFFFFF';
+          for (let i = 0; i < 300; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.beginPath();
+            ctx.arc(x, y, 1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          // Add ice patches
+          ctx.fillStyle = '#E0FFFF';
+          for (let i = 0; i < 20; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.beginPath();
+            ctx.arc(x, y, Math.random() * 15 + 10, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+          
+        case 'volcano':
+          // Volcanic ground with lava cracks
+          ctx.fillStyle = '#8B0000';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Add lava cracks
+          ctx.strokeStyle = '#FF4500';
+          ctx.lineWidth = 3;
+          for (let i = 0; i < 15; i++) {
+            let startX = Math.random() * canvas.width;
+            let startY = Math.random() * canvas.height;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            for (let j = 0; j < 5; j++) {
+              startX += Math.random() * 40 - 20;
+              startY += Math.random() * 40 - 20;
+              ctx.lineTo(startX, startY);
+            }
+            ctx.stroke();
+          }
+          // Add ember particles
+          ctx.fillStyle = '#FF6347';
+          for (let i = 0; i < 100; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.beginPath();
+            ctx.arc(x, y, 1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+          
+        case 'ocean':
+          // Ocean with wave patterns
+          ctx.fillStyle = '#4682B4';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Add wave lines
+          ctx.strokeStyle = '#87CEEB';
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 20; i++) {
+            let y = Math.random() * canvas.height;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            for (let x = 0; x < canvas.width; x += 20) {
+              ctx.quadraticCurveTo(x + 10, y + Math.sin(x * 0.02) * 5, x + 20, y);
+            }
+            ctx.stroke();
+          }
+          // Add water bubbles
+          ctx.fillStyle = '#B0E0E6';
+          for (let i = 0; i < 80; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.beginPath();
+            ctx.arc(x, y, Math.random() * 3 + 1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+          
+        case 'space':
+          // Space with stars and nebula
+          ctx.fillStyle = '#191970';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Add very slowly twinkling stars
+          const time = Date.now() * 0.0001; // Even slower time multiplier
+          ctx.fillStyle = '#FFFFFF';
+          for (let i = 0; i < 200; i++) {
+            let x = (i * 37) % canvas.width; // Fixed positions based on index
+            let y = (i * 73) % canvas.height;
+            let twinkle = Math.sin(time + i * 0.05) * 0.5 + 0.5; // Very slow twinkling
+            let starSize = (1 + Math.sin(i) * 0.5) * (0.5 + twinkle * 1.5);
+            ctx.globalAlpha = 0.4 + twinkle * 0.6;
+            ctx.beginPath();
+            ctx.arc(x, y, starSize, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+          
+          // Add very slowly moving nebula clouds
+          ctx.fillStyle = 'rgba(138, 43, 226, 0.2)';
+          for (let i = 0; i < 8; i++) {
+            let baseX = (i * 100) % canvas.width;
+            let baseY = (i * 80) % canvas.height;
+            let x = baseX + Math.sin(time * 0.1 + i) * 15; // Much slower movement
+            let y = baseY + Math.cos(time * 0.08 + i) * 12;
+            let size = 40 + Math.sin(time * 0.12 + i) * 8; // Very slow size pulsing
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          
+          // Add secondary nebula layer with different color - even slower
+          ctx.fillStyle = 'rgba(75, 0, 130, 0.15)';
+          for (let i = 0; i < 6; i++) {
+            let baseX = (i * 120 + 60) % canvas.width;
+            let baseY = (i * 90 + 45) % canvas.height;
+            let x = baseX + Math.cos(time * 0.06 + i) * 20;
+            let y = baseY + Math.sin(time * 0.09 + i) * 16;
+            let size = 35 + Math.cos(time * 0.07 + i) * 6;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+          
+        case 'jungle':
+          // Dense jungle floor
+          ctx.fillStyle = '#006400';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Add fallen leaves
+          ctx.fillStyle = '#8B4513';
+          for (let i = 0; i < 150; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.beginPath();
+            ctx.ellipse(x, y, 3, 2, Math.random() * Math.PI, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          // Add moss patches
+          ctx.fillStyle = '#9ACD32';
+          for (let i = 0; i < 100; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.beginPath();
+            ctx.arc(x, y, Math.random() * 4 + 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+          
+        case 'shooting_range':
+          // Clean training facility floor
+          ctx.fillStyle = '#2C2C2C';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Add grid pattern for training facility
+          ctx.strokeStyle = '#404040';
+          ctx.lineWidth = 1;
+          for (let i = 0; i < canvas.width; i += 50) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, canvas.height);
+            ctx.stroke();
+          }
+          for (let i = 0; i < canvas.height; i += 50) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(canvas.width, i);
+            ctx.stroke();
+          }
+          
+          // Add target circles on the floor
+          ctx.strokeStyle = '#FF6B35';
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 8; i++) {
+            let x = 100 + (i % 4) * 150;
+            let y = 100 + Math.floor(i / 4) * 200;
+            for (let radius = 20; radius <= 60; radius += 20) {
+              ctx.beginPath();
+              ctx.arc(x, y, radius, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
+          break;
+          
+        default:
+          ctx.fillStyle = '#696969';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          break;
+      }
+    }
+
+    function drawMap() {
+      // Draw detailed background
+      drawMapBackground();
+
+      // Draw map objects
+      drawMapObjects();
+
+      // Draw border around the map
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(2.5, 2.5, canvas.width - 5, canvas.height - 5);
+      
+      // Draw inner border for better visibility
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+
+      ctx.fillStyle = '#000';
+      ctx.font = '20px Arial';
+      ctx.fillText('Map: ' + map, 15, 35);
+    }
+
+    function drawPlayer() {
+      // Draw player with animation effects
+      let playerColor = 'cyan';
+      let playerSize = 15;
+      
+      // Apply animation effects based on current animation
+      if (animationState.type && animationState.frame < animationState.maxFrames) {
+        switch(animationState.type) {
+          case 'teleport':
+            // Hunter teleport - purple void effect
+            let intensity = Math.sin(animationState.frame * 0.5) * 0.5 + 0.5;
+            playerColor = `rgb(${Math.floor(128 + intensity * 127)}, 0, ${255})`;
+            playerSize = 15 + Math.sin(animationState.frame * 0.4) * 5;
+            
+            // Draw void energy effect
+            ctx.fillStyle = `rgba(128, 0, 255, ${0.6 - (animationState.frame / animationState.maxFrames) * 0.6})`;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, 25 + animationState.frame * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+            
+          case 'shield':
+            // Titan shield - blue protective effect
+            playerColor = `rgb(0, ${Math.floor(100 + Math.sin(animationState.frame * 0.3) * 155)}, 255)`;
+            
+            // Draw shield activation effect
+            ctx.strokeStyle = `rgba(0, 150, 255, ${0.8 - (animationState.frame / animationState.maxFrames) * 0.8})`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, 30 + animationState.frame * 0.5, 0, Math.PI * 2);
+            ctx.stroke();
+            break;
+            
+          case 'rift':
+            // Warlock rift - green healing effect
+            playerColor = `rgb(0, 255, ${Math.floor(100 + Math.sin(animationState.frame * 0.4) * 155)})`;
+            
+            // Draw rift activation effect
+            ctx.fillStyle = `rgba(0, 255, 100, ${0.4 - (animationState.frame / animationState.maxFrames) * 0.4})`;
+            for (let i = 0; i < 3; i++) {
+              ctx.beginPath();
+              ctx.arc(player.x, player.y, 20 + i * 10 + animationState.frame, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            break;
+        }
+        animationState.frame++;
+        
+        if (animationState.frame >= animationState.maxFrames) {
+          animationState.type = null;
+          animationState.frame = 0;
+        }
+      }
+      
+      // Draw Titan shield if active - Reduced by 50%
+      if (titanShield.active) {
+        // Outer shield ring
+        ctx.strokeStyle = `rgba(0, 150, 255, 0.7)`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, 25, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Inner shield ring
+        ctx.strokeStyle = `rgba(0, 150, 255, 0.8)`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, 20, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Shield energy effect
+        ctx.fillStyle = `rgba(0, 150, 255, 0.1)`;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, 25, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Shield energy pulse (reduced)
+        let pulseTime = Date.now() * 0.005;
+        let pulseRadius = 22 + Math.sin(pulseTime) * 3;
+        ctx.strokeStyle = `rgba(0, 150, 255, 0.3)`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, pulseRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      
+      // Draw Warlock rift if active - Reduced by 50%
+      if (warlockRift.active) {
+        // Outer rift
+        ctx.fillStyle = `rgba(0, 255, 100, 0.15)`;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, 30, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Inner rift core
+        ctx.fillStyle = `rgba(0, 255, 100, 0.25)`;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, 20, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Rift energy waves (reduced)
+        let waveTime = Date.now() * 0.003;
+        for (let i = 0; i < 2; i++) {
+          let waveRadius = 15 + (i * 8) + Math.sin(waveTime + i) * 4;
+          ctx.strokeStyle = `rgba(0, 255, 100, ${0.4 - i * 0.1})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(player.x, player.y, waveRadius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        
+        // Healing particles (reduced count)
+        for (let i = 0; i < 6; i++) {
+          let angle = (Date.now() * 0.008 + i * Math.PI * 0.33) % (Math.PI * 2);
+          let distance = 15 + Math.sin(Date.now() * 0.01 + i) * 10;
+          let x = player.x + Math.cos(angle) * distance;
+          let y = player.y + Math.sin(angle) * distance;
+          ctx.fillStyle = `rgba(0, 255, 100, 0.8)`;
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      
+      // Draw player
+      ctx.fillStyle = playerColor;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, playerSize, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff';
+      ctx.fillText('Character: ' + character, 10, 50);
+      
+      // Draw health bar
+      ctx.fillStyle = 'red';
+      ctx.fillRect(10, 70, 100, 10);
+      ctx.fillStyle = 'green';
+      ctx.fillRect(10, 70, (player.health / player.maxHealth) * 100, 10);
+      ctx.strokeStyle = 'white';
+      ctx.strokeRect(10, 70, 100, 10);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`Health: ${player.health}/${player.maxHealth}`, 10, 95);
+    }
+
+    function checkBulletCollision(bulletX, bulletY) {
+      const bulletRadius = 3;
+      
+      for (let obj of mapObjects) {
+        let objRadius, objX, objY, objWidth, objHeight;
+        
+        switch(obj.type) {
+          case 'tree':
+            objRadius = obj.size * 0.7;
+            objX = obj.x;
+            objY = obj.y - obj.size * 0.3;
+            break;
+          case 'cactus':
+            objWidth = obj.size * 0.6;
+            objHeight = obj.size;
+            objX = obj.x;
+            objY = obj.y - obj.size / 2;
+            break;
+          case 'building':
+            objWidth = obj.width;
+            objHeight = obj.height;
+            objX = obj.x;
+            objY = obj.y - obj.height / 2;
+            break;
+          case 'snowpile':
+          case 'lavarock':
+          case 'coral':
+          case 'asteroid':
+          case 'vine':
+            objRadius = obj.size;
+            objX = obj.x;
+            objY = obj.y;
+            break;
+        }
+        
+        // Check collision based on object type
+        if (obj.type === 'cactus' || obj.type === 'building') {
+          // Rectangle collision for cacti and buildings
+          if (bulletX + bulletRadius > objX - objWidth/2 &&
+              bulletX - bulletRadius < objX + objWidth/2 &&
+              bulletY + bulletRadius > objY - objHeight/2 &&
+              bulletY - bulletRadius < objY + objHeight/2) {
+            return true;
+          }
+        } else {
+          // Circle collision for other objects
+          const distance = Math.sqrt((bulletX - objX) ** 2 + (bulletY - objY) ** 2);
+          if (distance < bulletRadius + objRadius) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function checkEnemyCollision(bulletX, bulletY) {
+      if (map !== 'shooting_range') return null;
+      
+      // Check collision with mini dummies
+      for (let enemy of enemies) {
+        const distance = Math.sqrt((bulletX - enemy.x) ** 2 + (bulletY - enemy.y) ** 2);
+        if (distance < 3 + enemy.size) {
+          return enemy;
+        }
+      }
+      
+      // Check collision with boss
+      if (bossEnemy) {
+        const distance = Math.sqrt((bulletX - bossEnemy.x) ** 2 + (bulletY - bossEnemy.y) ** 2);
+        if (distance < 3 + bossEnemy.size) {
+          return bossEnemy;
+        }
+      }
+      
+      return null;
+    }
+
+    function updateBullets() {
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        let bullet = bullets[i];
+        
+        // Add current position to trail
+        bullet.trail.push({ x: bullet.x, y: bullet.y });
+        if (bullet.trail.length > 8) { // Keep trail length manageable
+          bullet.trail.shift();
+        }
+        
+        bullet.x += bullet.dx;
+        bullet.y += bullet.dy;
+        bullet.life--;
+        
+        // Check for collision with enemies first
+        let hitEnemy = checkEnemyCollision(bullet.x, bullet.y);
+        if (hitEnemy) {
+          // Calculate damage based on abilities
+          let damage = 10; // Base damage
+          
+          // Apply damage boosts
+          if (hunterDamageBoost.active && character === 'hunter') {
+            damage *= 1.2; // 20% damage boost
+          }
+          if (warlockDamageBoost.active && character === 'warlock') {
+            damage *= 1.2; // 20% damage boost
+          }
+          
+          // Titan shield reduces damage by 70%
+          if (hitEnemy.ability === 'shield') {
+            damage = damage * 0.3; // 30% damage (70% reduction)
+          }
+          
+          // Deal damage to enemy
+          hitEnemy.health -= damage;
+          
+          // Reset health if it reaches 0 (unkillable dummies)
+          if (hitEnemy.health <= 0) {
+            hitEnemy.health = hitEnemy.maxHealth;
+          }
+          
+          bullets.splice(i, 1);
+          continue;
+        }
+        
+        // Check for collision with objects
+        if (checkBulletCollision(bullet.x, bullet.y)) {
+          bullets.splice(i, 1);
+          continue;
+        }
+        
+        // Remove bullets that are off screen or expired
+        if (bullet.x < 0 || bullet.x > canvas.width ||
+            bullet.y < 0 || bullet.y > canvas.height ||
+            bullet.life <= 0) {
+          bullets.splice(i, 1);
+        }
+      }
+    }
+
+    function drawBullets() {
+      bullets.forEach(bullet => {
+        // Draw smooth trail effect
+        if (bullet.trail && bullet.trail.length > 1) {
+          for (let i = 0; i < bullet.trail.length - 1; i++) {
+            let trailPoint = bullet.trail[i];
+            let alpha = (i / bullet.trail.length) * 0.3;
+            let size = (i / bullet.trail.length) * 4 + 2;
+            
+            ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(trailPoint.x, trailPoint.y, size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        
+        // Draw large outer glow for maximum visibility
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw bright yellow glow
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.6)';
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw bright bullet core
+        ctx.fillStyle = '#FFFF00';
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw white center for maximum visibility
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Add thick black outline for contrast against any background
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, 6, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Add inner white outline for extra contrast
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+    }
+
+    function drawEnemies() {
+      if (map !== 'shooting_range') return;
+      
+      // Draw mini training dummies
+      enemies.forEach(enemy => {
+        // Draw dummy shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.arc(enemy.x + 2, enemy.y + 2, enemy.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw dummy body
+        ctx.fillStyle = '#8B4513';
+        ctx.beginPath();
+        ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw dummy face
+        ctx.fillStyle = '#D2691E';
+        ctx.beginPath();
+        ctx.arc(enemy.x, enemy.y - 5, enemy.size * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw dummy eyes
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(enemy.x - 5, enemy.y - 8, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(enemy.x + 5, enemy.y - 8, 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw ability effects
+        if (enemy.ability === 'shield') {
+          ctx.strokeStyle = 'rgba(0, 150, 255, 0.7)';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(enemy.x, enemy.y, enemy.size + 10, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (enemy.ability === 'rift') {
+          ctx.fillStyle = 'rgba(0, 255, 100, 0.3)';
+          ctx.beginPath();
+          ctx.arc(enemy.x, enemy.y, enemy.size + 15, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        
+        // Draw health bar
+        let barWidth = enemy.size * 2;
+        let barHeight = 6;
+        let barX = enemy.x - barWidth / 2;
+        let barY = enemy.y - enemy.size - 15;
+        
+        ctx.fillStyle = 'red';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+        ctx.fillStyle = 'green';
+        ctx.fillRect(barX, barY, (enemy.health / enemy.maxHealth) * barWidth, barHeight);
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barWidth, barHeight);
+        
+        // Draw health text
+        ctx.fillStyle = 'white';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${enemy.health}/${enemy.maxHealth}`, enemy.x, barY - 5);
+      });
+      
+      // Draw boss dummy
+      if (bossEnemy) {
+        // Draw boss shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.arc(bossEnemy.x + 4, bossEnemy.y + 4, bossEnemy.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw boss body
+        ctx.fillStyle = '#4B0000';
+        ctx.beginPath();
+        ctx.arc(bossEnemy.x, bossEnemy.y, bossEnemy.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw boss face
+        ctx.fillStyle = '#8B0000';
+        ctx.beginPath();
+        ctx.arc(bossEnemy.x, bossEnemy.y - 10, bossEnemy.size * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw boss eyes
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.arc(bossEnemy.x - 10, bossEnemy.y - 15, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(bossEnemy.x + 10, bossEnemy.y - 15, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw boss health bar (larger)
+        let barWidth = bossEnemy.size * 3;
+        let barHeight = 10;
+        let barX = bossEnemy.x - barWidth / 2;
+        let barY = bossEnemy.y - bossEnemy.size - 25;
+        
+        ctx.fillStyle = 'red';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+        ctx.fillStyle = 'green';
+        ctx.fillRect(barX, barY, (bossEnemy.health / bossEnemy.maxHealth) * barWidth, barHeight);
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(barX, barY, barWidth, barHeight);
+        
+        // Draw boss health text
+        ctx.fillStyle = 'white';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`BOSS: ${bossEnemy.health}/${bossEnemy.maxHealth}`, bossEnemy.x, barY - 10);
+      }
+      
+      ctx.textAlign = 'left'; // Reset text alignment
+    }
+
+    function drawCrosshair() {
+      if (!showCrosshair) return;
+      
+      ctx.strokeStyle = '#FF0000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      
+      const crosshairSize = 15;
+      const gap = 5;
+      
+      // Draw crosshair lines
+      // Top line
+      ctx.beginPath();
+      ctx.moveTo(mouseX, mouseY - crosshairSize);
+      ctx.lineTo(mouseX, mouseY - gap);
+      ctx.stroke();
+      
+      // Bottom line
+      ctx.beginPath();
+      ctx.moveTo(mouseX, mouseY + gap);
+      ctx.lineTo(mouseX, mouseY + crosshairSize);
+      ctx.stroke();
+      
+      // Left line
+      ctx.beginPath();
+      ctx.moveTo(mouseX - crosshairSize, mouseY);
+      ctx.lineTo(mouseX - gap, mouseY);
+      ctx.stroke();
+      
+      // Right line
+      ctx.beginPath();
+      ctx.moveTo(mouseX + gap, mouseY);
+      ctx.lineTo(mouseX + crosshairSize, mouseY);
+      ctx.stroke();
+      
+      // Draw center dot
+      ctx.fillStyle = '#FF0000';
+      ctx.beginPath();
+      ctx.arc(mouseX, mouseY, 2, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw aiming line from player to crosshair
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(player.x, player.y);
+      ctx.lineTo(mouseX, mouseY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function healEnemiesWithRift() {
+      if (map !== 'shooting_range') return;
+      
+      enemies.forEach(enemy => {
+        if (enemy.ability === 'rift' && enemy.health < enemy.maxHealth) {
+          // Calculate healing rate: 1000 HP in 37 seconds at 60fps
+          // 1000 HP / (37 seconds * 60 fps) = 0.45 HP per frame
+          enemy.health += 0.45;
+          if (enemy.health > enemy.maxHealth) {
+            enemy.health = enemy.maxHealth;
+          }
+        }
+      });
+    }
+
+    function applyTitanDamageAura() {
+      if (!titanDamageAura.active || !titanShield.active || map !== 'shooting_range') return;
+      
+      // Apply damage aura to enemies with health < 100%
+      enemies.forEach(enemy => {
+        if (enemy.health < enemy.maxHealth) {
+          // Deal 5% of their health as damage over 10 seconds
+          // 5% / (10 seconds * 60 fps) = 0.0083% per frame
+          let auraDamage = enemy.maxHealth * 0.0083 / 100;
+          enemy.health -= auraDamage;
+          if (enemy.health <= 0) {
+            enemy.health = enemy.maxHealth; // Reset since dummies are unkillable
+          }
+        }
+      });
+      
+      // Apply to boss if exists and health < 100%
+      if (bossEnemy && bossEnemy.health < bossEnemy.maxHealth) {
+        let auraDamage = bossEnemy.maxHealth * 0.0083 / 100;
+        bossEnemy.health -= auraDamage;
+        if (bossEnemy.health <= 0) {
+          bossEnemy.health = bossEnemy.maxHealth;
+        }
+      }
+    }
+
+    function checkDamageZone() {
+      if (map !== 'shooting_range' || playerDead) return;
+      
+      // Check if player is in damage zone
+      const distance = Math.sqrt((player.x - damageZone.x) ** 2 + (player.y - damageZone.y) ** 2);
+      if (distance <= damageZone.radius) {
+        damageZone.damageTimer++;
+        if (damageZone.damageTimer >= damageZone.damageInterval) {
+          // Deal 10% damage every 5 seconds
+          player.health -= player.maxHealth * 0.1;
+          damageZone.damageTimer = 0;
+          
+          // Check if player died
+          if (player.health <= 0) {
+            player.health = 0;
+            playerDead = true;
+            respawnTimer = respawnDuration;
+            gameState = 'dead';
+          }
+        }
+      } else {
+        damageZone.damageTimer = 0; // Reset timer when not in zone
+      }
+    }
+
+    function handleRespawn() {
+      if (!playerDead) return;
+      
+      respawnTimer--;
+      if (respawnTimer <= 0) {
+        // Respawn player
+        playerDead = false;
+        player.health = player.maxHealth;
+        gameState = 'playing';
+        
+        // Reset player position to a safe spawn
+        const spawnPos = findSafeSpawnPosition();
+        player.x = spawnPos.x;
+        player.y = spawnPos.y;
+        
+        // Reset all ability states
+        titanShield.active = false;
+        warlockRift.active = false;
+        hunterDamageBoost.active = false;
+        warlockDamageBoost.active = false;
+        titanDamageAura.active = false;
+        abilityCooldown = 0;
+      }
+    }
+
+    function drawDamageZone() {
+      if (map !== 'shooting_range') return;
+      
+      // Draw damage zone (black circle)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.beginPath();
+      ctx.arc(damageZone.x, damageZone.y, damageZone.radius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw warning border
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(damageZone.x, damageZone.y, damageZone.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Draw warning text
+      ctx.fillStyle = '#ff0000';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('DANGER ZONE', damageZone.x, damageZone.y - 5);
+      ctx.fillText('-10% HP/5s', damageZone.x, damageZone.y + 8);
+      ctx.textAlign = 'left';
+    }
+
+    function drawRespawnTimer() {
+      if (!playerDead) return;
+      
+      // Draw respawn timer rectangle in center of screen
+      const rectWidth = 300;
+      const rectHeight = 100;
+      const rectX = (canvas.width - rectWidth) / 2;
+      const rectY = (canvas.height - rectHeight) / 2;
+      
+      // Draw background rectangle
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+      
+      // Draw border
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(rectX, rectY, rectWidth, rectHeight);
+      
+      // Draw text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('YOU DIED', canvas.width / 2, rectY + 35);
+      
+      ctx.font = '18px Arial';
+      const timeLeft = Math.ceil(respawnTimer / 60);
+      ctx.fillText(`Respawning in: ${timeLeft}s`, canvas.width / 2, rectY + 65);
+      
+      ctx.textAlign = 'left';
+    }
+
+    function gameLoop() {
+      if (gameState === 'playing') {
+        updateMovement();
+        
+        // Update cooldown
+        if (abilityCooldown > 0) {
+          abilityCooldown--;
+        }
+        
+        // Update Hunter damage boost
+        if (hunterDamageBoost.active) {
+          hunterDamageBoost.duration--;
+          if (hunterDamageBoost.duration <= 0) {
+            hunterDamageBoost.active = false;
+          }
+        }
+        
+        // Update Titan shield
+        if (titanShield.active) {
+          titanShield.duration--;
+          if (titanShield.duration <= 0) {
+            titanShield.active = false;
+            titanDamageAura.active = false; // Deactivate aura when shield ends
+          }
+        }
+        
+        // Update Warlock rift
+        if (warlockRift.active) {
+          warlockRift.duration--;
+          // Heal player constantly
+          if (player.health < player.maxHealth && !playerDead) {
+            player.health = Math.min(player.maxHealth, player.health + warlockRift.healRate / 60);
+          }
+          if (warlockRift.duration <= 0) {
+            warlockRift.active = false;
+            warlockDamageBoost.active = false; // Deactivate damage boost when rift ends
+          }
+        }
+        
+        // Check damage zone
+        checkDamageZone();
+        
+        updateBullets();
+        
+        // Heal enemies with Warlock rift
+        healEnemiesWithRift();
+        
+        // Apply Titan damage aura
+        applyTitanDamageAura();
+      }
+      
+      // Handle respawn system
+      handleRespawn();
+      
+      // Draw everything
+      drawMap();
+      drawDamageZone();
+      drawBullets();
+      drawEnemies();
+      
+      if (!playerDead) {
+        drawPlayer();
+      }
+      
+      drawCrosshair();
+      drawRespawnTimer();
+      
+      // Draw controls info and cooldown
+      ctx.fillStyle = '#fff';
+      ctx.font = '14px Arial';
+      ctx.fillText('SPACE: Shoot | SHIFT: Ability | WASD: Move', 10, canvas.height - 10);
+      
+      // Draw cooldown indicator
+      if (abilityCooldown > 0) {
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+        ctx.fillText(`Ability Cooldown: ${Math.ceil(abilityCooldown / 60)}s`, 10, canvas.height - 30);
+      } else {
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.7)';
+        ctx.fillText('Ability Ready!', 10, canvas.height - 30);
+      }
+      
+      // Draw ability status
+      ctx.fillStyle = '#fff';
+      let statusY = canvas.height - 50;
+      
+      if (titanShield.active) {
+        ctx.fillText(`Shield: ${Math.ceil(titanShield.duration / 60)}s`, 10, statusY);
+        statusY -= 20;
+        if (titanDamageAura.active) {
+          ctx.fillStyle = '#ff6b35';
+          ctx.fillText(`Damage Aura: Active`, 10, statusY);
+          ctx.fillStyle = '#fff';
+          statusY -= 20;
+        }
+      }
+      
+      if (warlockRift.active) {
+        ctx.fillText(`Rift: ${Math.ceil(warlockRift.duration / 60)}s`, 10, statusY);
+        statusY -= 20;
+        if (warlockDamageBoost.active) {
+          ctx.fillStyle = '#00ff64';
+          ctx.fillText(`Damage Boost: +20%`, 10, statusY);
+          ctx.fillStyle = '#fff';
+          statusY -= 20;
+        }
+      }
+      
+      if (hunterDamageBoost.active) {
+        ctx.fillStyle = '#8e44ad';
+        ctx.fillText(`Hunter Boost: ${Math.ceil(hunterDamageBoost.duration / 60)}s`, 10, statusY);
+        ctx.fillStyle = '#fff';
+        statusY -= 20;
+      }
+      
+      // Update mobile controls visibility
+      updateMobileControlsVisibility();
+      
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Initialize mobile detection on page load
+    window.addEventListener('load', () => {
+      isMobile = detectMobile();
+    });
+
+    // Handle window resize for mobile
+    window.addEventListener('resize', () => {
+      if (isMobile) {
+        resizeCanvasForMobile();
+      }
+    });
+  </script>
+</body>
+</html>
